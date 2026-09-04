@@ -24,11 +24,12 @@ const USERS_FILE = path.join(DATA_DIR, 'users.json');
 
 /* ---------------- 用户数据（登录名注册表，为后续按人保存训练数据预留） ---------------- */
 fs.mkdirSync(DATA_DIR, { recursive: true });
-let users = {};
+let rawUsers = {};
+let users = {}; // 规范化后的用户映射：name -> {createdAt, settings?}
 try {
-  users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+  rawUsers = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
 } catch {
-  users = {};
+  rawUsers = {};
 }
 
 let writeChain = Promise.resolve();
@@ -54,13 +55,13 @@ const RECORDS_FILE = path.join(DATA_DIR, 'records.json');
 const RECORD_MODES = [3, 4, 5, 6, 7, 8];
 const MAX_PER_MODE = 300;
 
-let records = {};
+let rawRecords = {};
 try {
-  records = JSON.parse(fs.readFileSync(RECORDS_FILE, 'utf8'));
+  rawRecords = JSON.parse(fs.readFileSync(RECORDS_FILE, 'utf8'));
 } catch {
-  records = {};
+  rawRecords = {};
 }
-if (!records.users || typeof records.users !== 'object') records.users = {};
+let records = { users: {} };
 
 let recordsChain = Promise.resolve();
 function persistRecords() {
@@ -70,6 +71,82 @@ function persistRecords() {
     .catch((err) => console.error('保存历史成绩失败：', err.message));
   return recordsChain;
 }
+
+/* ------------------------------------------------------------
+ * 数据规范化：旧版本可能因多个服务实例并发写盘产生嵌套套娃结构
+ * （users.users.users…），这里在启动时递归压平并合并，
+ * 同名用户取“带设置且时间较新”的记录，历史记录按时间合并去重。
+ * ------------------------------------------------------------ */
+function pickBetterUser(cur, cand) {
+  if (!cur) return cand;
+  const hasS = (r) => r && r.settings && typeof r.settings === 'object';
+  const curS = hasS(cur);
+  const candS = hasS(cand);
+  if (curS !== candS) return candS ? cand : cur; // 优先保留带设置的用户
+  const ct = new Date((cur && cur.createdAt) || 0).getTime();
+  const c2 = new Date((cand && cand.createdAt) || 0).getTime();
+  return c2 >= ct ? cand : cur;
+}
+
+function flattenUsers(raw) {
+  const out = {};
+  (function walk(node) {
+    if (!node || typeof node !== 'object' || Array.isArray(node)) return;
+    Object.keys(node).forEach((k) => {
+      const v = node[k];
+      if (!v || typeof v !== 'object' || Array.isArray(v)) return;
+      if (typeof v.createdAt === 'string') {
+        out[k] = pickBetterUser(out[k], v); // 该节点是一条用户记录
+      } else {
+        walk(v);
+      }
+    });
+  })(raw);
+  return out;
+}
+
+function flattenRecords(raw) {
+  const merged = {};
+  const MODE_RE = /^\d+x\d+$/;
+  const ensureUser = (name) => {
+    if (!merged[name]) merged[name] = {};
+    return merged[name];
+  };
+  (function walk(node) {
+    if (!node || typeof node !== 'object' || Array.isArray(node)) return;
+    Object.keys(node).forEach((k) => {
+      const v = node[k];
+      if (!v || typeof v !== 'object' || Array.isArray(v)) return;
+      // 该节点是否为某个用户的规格记录容器（键形如 3x3…8x8）
+      const looksLikeUser = Object.keys(v).some((m) => MODE_RE.test(m) && Array.isArray(v[m]));
+      if (looksLikeUser && typeof v.createdAt !== 'string') {
+        const target = ensureUser(k);
+        Object.keys(v).forEach((mode) => {
+          if (!MODE_RE.test(mode) || !Array.isArray(v[mode])) return;
+          const seen = new Set();
+          const base = (target[mode] || []).slice();
+          base.forEach((r) => r && r.t !== undefined && seen.add(r.t));
+          v[mode].forEach((r) => {
+            if (r && r.t !== undefined && !seen.has(r.t)) {
+              base.push(r);
+              seen.add(r.t);
+            }
+          });
+          base.sort((a, b) => (a.t || 0) - (b.t || 0));
+          target[mode] = base.slice(-MAX_PER_MODE * 3);
+        });
+      } else {
+        walk(v);
+      }
+    });
+  })(raw);
+  return merged;
+}
+
+users = flattenUsers(rawUsers);
+records.users = flattenRecords(rawRecords);
+persistUsers();
+persistRecords();
 
 /* ---------------- 静态资源 ---------------- */
 const MIME = {
