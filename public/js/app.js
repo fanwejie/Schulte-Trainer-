@@ -274,6 +274,10 @@
       'login.errFail': 'Login failed. Please retry.',
       'hist.errClear': 'Clear failed. Please retry.',
       'menu.switch': 'Switch User',
+      'users.title': 'Registered Users',
+      'users.empty': 'No users yet. Enter a name above to register.',
+      'users.delConfirm': 'Delete user "{name}" and all their records & settings? This cannot be undone.',
+      'users.delDone': 'User deleted.',
     },
     zh: {
       'login.sub': '注意力 · 视觉搜索 · 反应速度',
@@ -326,6 +330,10 @@
       'login.errFail': '登录失败，请重试',
       'hist.errClear': '清空失败，请稍后重试。',
       'menu.switch': '切换用户',
+      'users.title': '已注册用户',
+      'users.empty': '暂无用户，输入名字注册后显示在这里。',
+      'users.delConfirm': '确定删除用户「{name}」及其全部成绩与设置吗？此操作不可恢复。',
+      'users.delDone': '用户已删除。',
     },
     es: {
       'login.enter': 'Iniciar', 'login.name': 'Nombre', 'login.placeholder': 'Escribe tu nombre',
@@ -423,6 +431,7 @@
     nameInput: $('#name-input'),
     loginBtn: $('#login-btn'),
     loginHint: $('#login-hint'),
+    loginUserList: $('#login-user-list'),
     hello: $('#hello'),
     sidebar: $('#sidebar'),
     sidebarToggle: $('#sidebar-toggle'),
@@ -585,8 +594,32 @@
     }
   }
 
-  async function apiClearRecords(name, size) {
+  /* ---------- 已注册用户列表 / 删除 ---------- */
+  async function apiGetUsers() {
     try {
+      const res = await fetch('/api/users');
+      const data = await res.json();
+      return data && data.ok ? data.users : [];
+    } catch {
+      return null;
+    }
+  }
+
+  async function apiDeleteUser(name) {
+    try {
+      const res = await fetch('/api/users/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      return !!(data && data.ok);
+    } catch {
+      return false;
+    }
+  }
+
+  async function apiClearRecords(name, size) {    try {
       const body = { name };
       if (size) body.size = size;
       const res = await fetch('/api/records/clear', {
@@ -852,6 +885,47 @@
     els.loginBtn.textContent = busy ? t('login.busy') : t('login.enter');
   }
 
+  /* 渲染“已注册用户”列表并支持删除 */
+  async function refreshLoginUsers() {
+    if (!els.loginUserList) return;
+    const list = await apiGetUsers();
+    if (!Array.isArray(list)) return;
+    const box = els.loginUserList;
+    box.innerHTML = '';
+    if (!list.length) {
+      box.innerHTML = `<div class="lu-empty">${t('users.empty')}</div>`;
+      return;
+    }
+    list.forEach((u) => {
+      const row = document.createElement('div');
+      row.className = 'lu-row';
+      const name = document.createElement('span');
+      name.className = 'lu-name';
+      name.textContent = u.name;
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'lu-del';
+      del.setAttribute('aria-label', t('users.delConfirm', { name: u.name }));
+      del.innerHTML = '<svg viewBox="0 0 20 20" width="15" height="15"><path fill="currentColor" d="M7 3h6l1 1h3v1H3V4h3l1-1zm-2 3h10l-.8 11H5.8L5 6z"/></svg>';
+      del.addEventListener('click', async () => {
+        const msg = t('users.delConfirm', { name: u.name });
+        if (!window.confirm(msg)) return;
+        const ok = await apiDeleteUser(u.name);
+        if (!ok) {
+          setHint(t('hist.errClear'), 'error');
+          return;
+        }
+        // 若删除的正是本机自动登录用户，清除本地记忆
+        try {
+          if (localStorage.getItem(STORE_KEY) === u.name) localStorage.removeItem(STORE_KEY);
+        } catch { /* ignore */ }
+        await refreshLoginUsers();
+      });
+      row.append(name, del);
+      box.appendChild(row);
+    });
+  }
+
   async function handleLoginSubmit(event) {
     event.preventDefault();
     const name = els.nameInput.value.trim().replace(/\s+/g, ' ');
@@ -910,6 +984,7 @@
     els.loginView.classList.remove('hidden');
     els.loginForm.reset();
     setHint(t('login.hint'));
+    refreshLoginUsers();
     els.nameInput.focus();
   }
 
@@ -1850,5 +1925,6 @@
     // 需要手动登录
     els.nameInput.focus();
     setHint(t('login.hint'));
+    refreshLoginUsers();
   })();
 })();

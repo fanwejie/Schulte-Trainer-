@@ -366,11 +366,48 @@ async function handleSaveSettings(req, res) {
   sendJson(res, 200, { ok: true, settings: users[name].settings });
 }
 
+/* 列出已注册用户 */
+function handleGetUsers(req, res) {
+  const list = Object.keys(users)
+    .map((name) => ({ name, createdAt: users[name].createdAt || null }))
+    .sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+  sendJson(res, 200, { ok: true, users: list });
+}
+
+/* 删除某用户（连同其历史成绩与设置） */
+async function handleDeleteUser(req, res) {
+  const body = await readBody(req);
+  const name = normalizeName(body && body.name);
+  if (!name) {
+    sendJson(res, 400, { ok: false, error: '参数不合法' });
+    return;
+  }
+  if (!users[name]) {
+    sendJson(res, 200, { ok: true, deleted: false });
+    return;
+  }
+  delete users[name];
+  await persistUsers();
+  if (records.users && records.users[name]) {
+    delete records.users[name];
+    await persistRecords();
+  }
+  sendJson(res, 200, { ok: true, deleted: true });
+}
+
 const server = http.createServer((req, res) => {
   const { pathname } = new URL(req.url, 'http://localhost');
 
   if (req.method === 'GET' && pathname === '/api/health') {
     sendJson(res, 200, { ok: true, name: 'schulte-trainer' });
+    return;
+  }
+  if (req.method === 'GET' && pathname === '/api/users') {
+    handleGetUsers(req, res);
+    return;
+  }
+  if (req.method === 'POST' && pathname === '/api/users/delete') {
+    handleDeleteUser(req, res).catch(() => sendJson(res, 500, { ok: false, error: '服务器内部错误' }));
     return;
   }
   if (req.method === 'POST' && pathname === '/api/login') {
