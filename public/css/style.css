@@ -202,9 +202,22 @@ body {
 }
 
 .login-sub {
-  margin: 6px 0 26px;
+  margin: 6px 0 14px;
   color: var(--text-2);
   font-size: 13px;
+}
+
+/* 登录页语言选择 */
+.login-lang {
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 0 auto 16px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.login-lang .seg-btn {
+  padding: 4px 10px;
 }
 
 .login-form {

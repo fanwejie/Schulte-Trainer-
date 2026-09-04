@@ -10,6 +10,7 @@
   const $ = (sel, root = document) => root.querySelector(sel);
   const STORE_KEY = 'schulte.username';
   const SIDEBAR_KEY = 'schulte.sidebar.collapsed';
+  const LANG_PREF_KEY = 'schulte.lang.pref'; // 登录页语言偏好（本机记住）
   const SIZES = [3, 4, 5, 6, 7, 8];
   const MOBILE_QUERY = '(max-width: 1024px)'; // 手机 + iPad 用抽屉式侧栏
 
@@ -420,7 +421,8 @@
     histRange: '30',      // 折线图时间范围(天)：today | 7 | 30 | 90 | 365
     histCloseTimer: 0,    // 历史弹窗关闭动画计时器
     settingsCloseTimer: 0, // 设置弹窗关闭动画计时器
-    settings: { theme: 'auto', fontSize: 1, font: 'default' }, // 用户设置
+    settings: { theme: 'auto', fontSize: 1, font: 'default', language: 'en' }, // 用户设置
+    loginLangChosen: false, // 登录页是否手动选择过语言
   };
 
   /* ---------- DOM ---------- */
@@ -431,6 +433,7 @@
     nameInput: $('#name-input'),
     loginBtn: $('#login-btn'),
     loginHint: $('#login-hint'),
+    loginLang: $('#login-lang'),
     loginUserList: $('#login-user-list'),
     hello: $('#hello'),
     sidebar: $('#sidebar'),
@@ -680,6 +683,59 @@
   };
   const DARK_MEDIA = window.matchMedia('(prefers-color-scheme: dark)');
 
+  /* ---------- 登录页语言 ---------- */
+  function readLangPref() {
+    try {
+      const v = localStorage.getItem(LANG_PREF_KEY);
+      return LANGS.includes(v) ? v : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeLangPref(v) {
+    try {
+      localStorage.setItem(LANG_PREF_KEY, v);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function syncLoginLangActive() {
+    if (!els.loginLang) return;
+    els.loginLang.querySelectorAll('.seg-btn').forEach((b) =>
+      b.classList.toggle('active', b.dataset.setLang === state.settings.language)
+    );
+  }
+
+  function buildLoginLang() {
+    if (!els.loginLang) return;
+    els.loginLang.innerHTML = '';
+    LANGS.forEach((code) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'seg-btn' + (code === state.settings.language ? ' active' : '');
+      b.dataset.setLang = code;
+      b.textContent = LANG_NAMES[code];
+      b.addEventListener('click', () => {
+        state.settings.language = code;
+        state.loginLangChosen = true;
+        writeLangPref(code);
+        applyLanguageUI();
+        syncLoginLangActive();
+      });
+      els.loginLang.appendChild(b);
+    });
+  }
+
+  /* 显示登录页时：应用本机记住的语言（未登录也能选语言注册） */
+  function applyLoginPageLang() {
+    const pref = readLangPref();
+    if (pref) state.settings.language = pref;
+    applyLanguageUI();
+    syncLoginLangActive();
+  }
+
   function cssVar(name, fb) {
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fb;
   }
@@ -823,6 +879,7 @@
     els.setFont.innerHTML = '';
     buildSettingsUi();
     syncSettingsControls();
+    syncLoginLangActive();
     // 若弹窗开着即时刷新
     if (!els.historyOverlay.classList.contains('hidden')) refreshHistoryView();
   }
@@ -963,8 +1020,22 @@
     updateUserChip();
     // 进入后按偏好展开侧栏（移动端默认收起为抽屉）
     applySbCollapsed(state.sbCollapsed);
+    // 登录页选择过语言：新注册时随账号保存（老用户则更新为其所选语言）
+    const chosenLang = state.loginLangChosen ? state.settings.language : null;
     // 拉取该用户保存的设置（主题/字号/字体/语言），跨设备同步
     await loadUserSettings(name);
+    if (chosenLang) {
+      state.settings.language = chosenLang;
+      applySettingsVisuals();
+      applyLanguageUI();
+      syncLoginLangActive();
+      try {
+        await apiSaveSettings(name, state.settings);
+      } catch {
+        /* 静默 */
+      }
+      state.loginLangChosen = false;
+    }
     resetToIdle();
   }
 
@@ -976,10 +1047,11 @@
       /* ignore */
     }
     state.user = null;
-    // 退出后回到默认外观与语言
+    // 退出后回到默认外观；登录页语言按本机偏好显示
     state.settings = { theme: 'auto', fontSize: 1, font: 'default', language: 'en' };
+    state.loginLangChosen = false;
     applySettingsVisuals();
-    applyLanguageUI();
+    applyLoginPageLang();
     els.mainView.classList.add('hidden');
     els.loginView.classList.remove('hidden');
     els.loginForm.reset();
@@ -1902,6 +1974,7 @@
     buildViewSwitch();   // 记录列表 / 折线图
     buildRangeChips();   // 折线图时间范围
     buildSettingsUi();   // 设置面板
+    buildLoginLang();    // 登录页语言选择
     applySettingsVisuals(); // 应用默认主题（跟随系统）
     applyLanguageUI();      // 应用默认语言（英语）与静态文案
 
@@ -1923,6 +1996,7 @@
       }
     }
     // 需要手动登录
+    applyLoginPageLang();
     els.nameInput.focus();
     setHint(t('login.hint'));
     refreshLoginUsers();
