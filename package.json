@@ -1,0 +1,11 @@
+{
+  "name": "schulte-trainer",
+  "version": "1.0.0",
+  "description": "Schulte Trainer 舒尔特方格训练工具 —— Win11 风格、局域网浏览器访问",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "MIT"
+}
