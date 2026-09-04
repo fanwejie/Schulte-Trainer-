@@ -325,7 +325,7 @@ const SETTING_KEYS = {
   theme: ['light', 'dark', 'auto'],
   fontSize: 'num',
   font: ['default', 'yahei', 'simsun', 'kaiti', 'heiti', 'pingfang'],
-  language: ['en', 'zh', 'es', 'ja', 'ko'],
+  language: ['en', 'zh'],
 };
 const SETTING_DEFAULTS = { theme: 'auto', fontSize: 1, font: 'default', language: 'en' };
 
