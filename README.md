@@ -9,3 +9,9 @@
 **下载即用**：本仓库已包含内置运行时（`runtime\node\node.exe`，Windows 64 位），点击页面 **Code → Download ZIP**，解压后双击 `start.bat` 即可运行，目标电脑无需安装任何软件。
 
 **Linux 服务器**：安装 Node.js ≥18 后执行 `node server.js`（默认监听 0.0.0.0:3000）即可；仓库内附 `start.sh`、systemd 服务示例（`schulte-trainer.service`）与 Dockerfile，便于常驻部署与容器化。
+
+## 界面预览
+
+| 电脑端 | 手机端 | iPad |
+| --- | --- | --- |
+| ![PC](screenshots/pc.png) | ![Mobile](screenshots/mobile.jpg) | ![iPad](screenshots/ipad.jpg) |
