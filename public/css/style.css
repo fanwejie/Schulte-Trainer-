@@ -1019,7 +1019,7 @@ body.sb-anim .side-inner {
 /* 已正确选中的数字：蓝色边框 + 淡蓝底（永久保留，数字仍可见） */
 .cell.done {
   background: var(--accent-faint);
-  border-color: var(--accent);
+  border: 2px solid var(--accent);
   cursor: default;
 }
 

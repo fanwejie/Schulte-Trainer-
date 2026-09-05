@@ -1193,9 +1193,11 @@
         els.timer.classList.add('running');
         state.raf = requestAnimationFrame(tick);
       }
-      // 点对：蓝框标记永久保留（数字仍可见），供后续目标继续
+      // 当前点对的数字：蓝框高亮；前一个自动恢复普通样式
+      const prev = els.board.querySelector('.cell.done');
+      if (prev && prev !== cell) prev.classList.remove('done');
       cell.classList.add('done');
-      cell.dataset.used = '1'; // 标记“已正确点过”，保留可点击以支持重复点击反馈
+      cell.dataset.used = '1'; // 仅用于“再点旧格子”时的短暂提醒
       state.next += 1;
       els.progress.textContent = `${state.next - 1} / ${state.total}`;
       if (state.next > state.total) finishRound();
