@@ -1,0 +1,7 @@
+node_modules
+runtime
+data
+.git
+.gitignore
+*.log
+schulte-trainer.service

@@ -486,7 +486,8 @@ server.listen(port, '0.0.0.0', () => {
   console.log('  按 Ctrl+C 或直接关闭本窗口即可停止服务。');
   console.log('');
 
-  if (process.env.NO_OPEN !== '1') {
+  // 仅在 Windows 桌面环境自动打开浏览器；Linux/服务器上跳过
+  if (process.env.NO_OPEN !== '1' && process.platform === 'win32') {
     try {
       const child = spawn(
         'cmd.exe',

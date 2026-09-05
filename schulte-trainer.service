@@ -1,0 +1,24 @@
+# Schulte Trainer —— systemd 服务示例
+# 放到 /etc/systemd/system/schulte-trainer.service 后：
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now schulte-trainer
+# 修改下面三处路径/用户以匹配你的部署目录。
+[Unit]
+Description=Schulte Trainer (舒尔特方格注意力训练)
+After=network.target
+
+[Service]
+Type=simple
+# 服务账号：建议换成实际运行账号，并确保可写 data 目录
+User=www-data
+WorkingDirectory=/opt/schulte-trainer
+ExecStart=/usr/bin/node /opt/schulte-trainer/server.js
+Restart=always
+RestartSec=3
+Environment=NODE_ENV=production
+Environment=NO_OPEN=1
+# 默认端口 3000；需要其它端口时取消下一行注释
+# Environment=PORT=8080
+
+[Install]
+WantedBy=multi-user.target
