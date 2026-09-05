@@ -12,6 +12,18 @@
 
 ## 界面预览
 
-| 电脑端 | 手机端 | iPad |
-| --- | --- | --- |
-| ![PC](screenshots/pc.png) | ![Mobile](screenshots/mobile.jpg) | ![iPad](screenshots/ipad.jpg) |
+<div align="center">
+
+**电脑端**
+
+<img src="screenshots/pc.png" width="620" alt="电脑端界面">
+
+**iPad**
+
+<img src="screenshots/ipad.jpg" width="620" alt="iPad 界面">
+
+**手机端**
+
+<img src="screenshots/mobile.jpg" width="270" alt="手机端界面">
+
+</div>
