@@ -998,8 +998,8 @@ body.sb-anim .side-inner {
 }
 
 .cell:hover:not(.done):not(:disabled) {
-  border-color: var(--accent);
   background: var(--accent-faint);
+  border-color: var(--cell-border); /* 悬停不变蓝框，避免误导 */
 }
 
 /* 按下 1 后：其余数字整体淡入、同时出现（数字 1 本身不动） */
@@ -1016,11 +1016,10 @@ body.sb-anim .side-inner {
   }
 }
 
-/* 当前选中的数字：淡灰底（数字保留可见）；
-   点中下一个正确数字后，这一格自动恢复原样 */
+/* 已正确选中的数字：蓝色边框 + 淡蓝底（永久保留，数字仍可见） */
 .cell.done {
-  background: var(--cell-done);
-  border-color: var(--cell-border);
+  background: var(--accent-faint);
+  border-color: var(--accent);
   cursor: default;
 }
 

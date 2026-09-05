@@ -1193,9 +1193,7 @@
         els.timer.classList.add('running');
         state.raf = requestAnimationFrame(tick);
       }
-      // 上一格恢复原样，当前格淡灰高亮（数字始终保留显示）
-      const prev = els.board.querySelector('.cell.done');
-      if (prev) prev.classList.remove('done');
+      // 点对：蓝框标记永久保留（数字仍可见），供后续目标继续
       cell.classList.add('done');
       cell.dataset.used = '1'; // 标记“已正确点过”，保留可点击以支持重复点击反馈
       state.next += 1;
