@@ -11,6 +11,7 @@
   const STORE_KEY = 'schulte.username';
   const SIDEBAR_KEY = 'schulte.sidebar.collapsed';
   const LANG_PREF_KEY = 'schulte.lang.pref'; // 登录页语言偏好（本机记住）
+  const HIST_UI_KEY = 'schulte.history.ui'; // 历史记录上次界面状态
   const SIZES = [3, 4, 5, 6, 7, 8];
   const MOBILE_QUERY = '(max-width: 1024px)'; // 手机 + iPad 用抽屉式侧栏
 
@@ -1434,9 +1435,40 @@
         );
         renderChart();
         animateViewIn(els.chartBox); // 切换时间范围：图表淡入
+        saveHistUiPref();
       });
       els.chartRanges.appendChild(b);
     });
+  }
+
+  /* ============================================================
+   * 历史成绩：记住上次打开的界面（视图/规格/时间范围）
+   * ============================================================ */
+  function loadHistUiPref() {
+    try {
+      const raw = localStorage.getItem(HIST_UI_KEY);
+      if (!raw) return;
+      const p = JSON.parse(raw);
+      if (p && (p.view === 'list' || p.view === 'chart')) state.histView = p.view;
+      if (p && (p.filter === HIST_ALL || /^\dx\d$/.test(p.filter || ''))) state.histFilter = p.filter;
+      if (p && (p.range === 'today' || p.range === '7' || p.range === '30' || p.range === '90' || p.range === '365')) {
+        state.histRange = p.range;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function saveHistUiPref() {
+    try {
+      localStorage.setItem(HIST_UI_KEY, JSON.stringify({
+        view: state.histView,
+        filter: state.histFilter,
+        range: state.histRange,
+      }));
+    } catch {
+      /* ignore */
+    }
   }
 
   /* 重放进场动画（淡入+轻微上移） */
@@ -1467,6 +1499,7 @@
       renderHistory();
       animateViewIn(els.historyList);
     }
+    saveHistUiPref(); // 记录当前界面状态
   }
 
   /* ============================================================
@@ -1925,6 +1958,7 @@
     const pref = readSidebarPref();
     state.sbCollapsed = pref === null ? lastMobile : pref;
     applySbCollapsed(state.sbCollapsed);
+    loadHistUiPref();     // 恢复历史记录上次打开的界面状态
     buildModeChips();    // 历史成绩规格筛选
     buildViewSwitch();   // 记录列表 / 折线图
     buildRangeChips();   // 折线图时间范围
