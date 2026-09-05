@@ -482,8 +482,6 @@
     setTheme: $('#set-theme'),
     setFontsize: $('#set-fontsize'),
     setFontsizeVal: $('#set-fontsize-val'),
-    setFont: $('#set-font'),
-    setFontSample: $('#set-font-sample'),
     setStatus: $('#settings-status'),
     settingsReset: $('#settings-reset'),
     setLang: $('#set-lang'),
@@ -663,24 +661,8 @@
   }
 
   /* ============================================================
-   * 用户设置：主题 / 数字大小 / 字体（随用户保存，跨设备生效）
+   * 用户设置：主题 / 数字大小 / 语言（随用户保存，跨设备生效）
    * ============================================================ */
-  const FONT_OPTIONS = [
-    { key: 'default', label: '默认' },
-    { key: 'yahei', label: '微软雅黑' },
-    { key: 'simsun', label: '宋体' },
-    { key: 'kaiti', label: '楷体' },
-    { key: 'heiti', label: '黑体' },
-    { key: 'pingfang', label: '苹方 / 系统' },
-  ];
-  const FONT_STACKS = {
-    default: ['"Segoe UI Variable Text"', '"Segoe UI"', '"Microsoft YaHei UI"', '"Microsoft YaHei"', 'system-ui', '-apple-system', '"PingFang SC"', 'sans-serif'].join(', '),
-    yahei: ['"Microsoft YaHei UI"', '"Microsoft YaHei"', '"Segoe UI"', 'system-ui', 'sans-serif'].join(', '),
-    simsun: ['"NSimSun"', '"SimSun"', '"宋体"', 'serif'].join(', '),
-    kaiti: ['"KaiTi"', '"楷体"', '"STKaiti"', '"AR PL UKai CN"', 'serif'].join(', '),
-    heiti: ['"SimHei"', '"黑体"', '"Heiti SC"', 'system-ui', 'sans-serif'].join(', '),
-    pingfang: ['"PingFang SC"', '"HarmonyOS Sans SC"', '"Microsoft YaHei"', 'system-ui', 'sans-serif'].join(', '),
-  };
   const DARK_MEDIA = window.matchMedia('(prefers-color-scheme: dark)');
 
   /* ---------- 登录页语言 ---------- */
@@ -751,18 +733,6 @@
   function applySettingsVisuals() {
     // 主题
     document.body.setAttribute('data-theme', resolveDark() ? 'dark' : 'light');
-    // 字体
-    const stack = FONT_STACKS[state.settings.font] || FONT_STACKS.default;
-    const root = document.documentElement.style;
-    root.setProperty('--font', stack);
-    root.setProperty('--font-display', stack);
-    // 直接作用于方格容器（数字格继承），确保所有环境即时生效
-    if (els.board) els.board.style.fontFamily = stack;
-    // 预览格
-    if (els.setFontSample) {
-      els.setFontSample.style.fontFamily = stack;
-      els.setFontSample.style.fontSize = `${Math.round(state.settings.fontSize * 24)}px`;
-    }
     // 字号同步到当前格子
     if (!els.mainView.classList.contains('hidden')) sizeCells();
   }
@@ -773,14 +743,12 @@
     );
     els.setFontsize.value = String(Math.round(state.settings.fontSize * 100));
     els.setFontsizeVal.textContent = `${els.setFontsize.value}%`;
-    els.setFont.value = state.settings.font;
   }
 
   function buildSettingsUi() {
     // 清空后重建（语言切换时会重调本函数）
     els.setLang.innerHTML = '';
     els.setTheme.innerHTML = '';
-    els.setFont.innerHTML = '';
 
     // 语言
     LANGS.forEach((code) => {
@@ -816,20 +784,6 @@
         persistSettings();
       });
       els.setTheme.appendChild(b);
-    });
-
-    // 字体下拉
-    FONT_OPTIONS.forEach((o) => {
-      const opt = document.createElement('option');
-      opt.value = o.key;
-      opt.textContent = t('font.' + o.key);
-      els.setFont.appendChild(opt);
-    });
-    els.setFont.addEventListener('change', () => {
-      state.settings.font = els.setFont.value;
-      applySettingsVisuals();
-      syncSettingsControls();
-      persistSettings();
     });
 
     // 字号滑杆与恢复默认：只在首次构建时绑定一次
@@ -878,7 +832,6 @@
     buildRangeChips();
     els.setLang.innerHTML = '';
     els.setTheme.innerHTML = '';
-    els.setFont.innerHTML = '';
     buildSettingsUi();
     syncSettingsControls();
     syncLoginLangActive();
