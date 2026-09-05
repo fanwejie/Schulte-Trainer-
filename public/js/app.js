@@ -756,6 +756,8 @@
     const root = document.documentElement.style;
     root.setProperty('--font', stack);
     root.setProperty('--font-display', stack);
+    // 直接作用于方格容器（数字格继承），确保所有环境即时生效
+    if (els.board) els.board.style.fontFamily = stack;
     // 预览格
     if (els.setFontSample) {
       els.setFontSample.style.fontFamily = stack;

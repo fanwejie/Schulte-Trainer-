@@ -975,7 +975,7 @@ body.sb-anim .side-inner {
   place-items: center;
   width: 100%;
   height: 100%;
-  font-family: var(--font);
+  font-family: inherit; /* 字体由 .board 直接设置并继承 */
   font-size: var(--cell-fs, 28px);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
