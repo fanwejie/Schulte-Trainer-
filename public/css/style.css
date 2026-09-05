@@ -674,7 +674,7 @@ body.sb-anim .side-inner {
 }
 
 body.sb-anim .side-inner {
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--surface-solid); /* 跟随主题：浅色=白，深色=暗灰，避免闪白 */
 }
 
 .side-inner {
