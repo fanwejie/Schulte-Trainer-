@@ -997,9 +997,12 @@ body.sb-anim .side-inner {
   transform: scale(0.97);
 }
 
-.cell:hover:not(.done):not(:disabled) {
-  background: var(--accent-faint);
-  border-color: var(--cell-border); /* 悬停不变蓝框，避免误导 */
+/* 悬停底色只在有鼠标的设备上启用（触屏点击后不会残留淡蓝背景） */
+@media (hover: hover) and (pointer: fine) {
+  .cell:hover:not(.done):not(:disabled) {
+    background: var(--accent-faint);
+    border-color: var(--cell-border); /* 悬停不变蓝框，避免误导 */
+  }
 }
 
 /* 按下 1 后：其余数字整体淡入、同时出现（数字 1 本身不动） */
