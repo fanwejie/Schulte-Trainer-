@@ -1048,6 +1048,31 @@
     return arr;
   }
 
+  /* 判断排列中是否有“连续数字相邻”（仅上下左右） */
+  function hasAdjacentConsecutive(order, size) {
+    const pos = new Array(order.length + 1);
+    for (let i = 0; i < order.length; i++) pos[order[i]] = i;
+    for (let v = 1; v < order.length; v++) {
+      const a = pos[v];
+      const b = pos[v + 1];
+      const dr = Math.abs(Math.floor(a / size) - Math.floor(b / size));
+      const dc = Math.abs((a % size) - (b % size));
+      if ((dr === 1 && dc === 0) || (dr === 0 && dc === 1)) return true;
+    }
+    return false;
+  }
+
+  /* 生成“相邻不相邻连续数”的排列（多次重洗，超限才妥协） */
+  function makeOrder(n) {
+    const total = n * n;
+    const base = Array.from({ length: total }, (_, i) => i + 1);
+    for (let attempt = 0; attempt < 6000; attempt++) {
+      const order = shuffle(base.slice());
+      if (!hasAdjacentConsecutive(order, n)) return order;
+    }
+    return shuffle(base.slice());
+  }
+
   function buildBoard(n) {
     state.size = n;
     state.total = n * n;
@@ -1060,7 +1085,7 @@
     els.board.style.gridTemplateRows = `repeat(${n}, 1fr)`;
     els.board.style.gap = `${n >= 7 ? 5 : n >= 6 ? 6 : 8}px`;
 
-    const order = shuffle(Array.from({ length: state.total }, (_, i) => i + 1));
+    const order = makeOrder(n); // 相邻（含对角）不放连续数字
     order.forEach((value, i) => {
       const cell = document.createElement('button');
       cell.type = 'button';
